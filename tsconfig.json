@@ -1,0 +1,36 @@
+{
+    "compilerOptions": {
+        /* === Ziel & Runtime === */
+        "target": "ES2023",
+        "lib": ["ES2023"],
+
+        /* === Node ESM === */
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+
+        /* === Projektstruktur === */
+        "rootDir": "src",
+        "outDir": "dist",
+
+        /* === Path Alias (@/...) === */
+        "baseUrl": "src",
+        "paths": {
+            "@/*": ["*"]
+        },
+
+        /* === Type Safety === */
+        "strict": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+
+        /* === Interop & JSON === */
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+
+        /* === Output === */
+        "sourceMap": true,
+        "noEmit": false
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules"]
+}

@@ -1,0 +1,20 @@
+node_modules/
+.env
+.env.*
+*.env
+!.env.example
+
+# runtime-generated map images
+output/*
+!output/.gitkeep
+
+# logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
