@@ -2,7 +2,7 @@ import { AutocompleteInteraction, ChatInputCommandInteraction } from "discord.js
 import axios from "axios";
 
 export const logCommandUsage = (interaction: ChatInputCommandInteraction) => {
-    const timestamp = new Date().toUTCString();
+    const timestamp = new Date().toISOString().replace("T", " | ").split(".")[0];
     console.log(`${timestamp} - ${interaction.user.username} - ${interaction}`);
 }
 

@@ -23,7 +23,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const data    = response.data.data;
     const balance = Math.floor(data.balance).toLocaleString("en-US");
     const dateOptions: Intl.DateTimeFormatOptions = {
-        year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hour12: false
+        year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric", second: undefined, hour12: false
     }
 
     const embed = new EmbedBuilder()
