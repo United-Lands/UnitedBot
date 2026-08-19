@@ -19,6 +19,7 @@ export const config = {
     apiBaseDev:  required("API_BASE_DEV"),
 
     honeypotChId:      process.env.HONEYPOT_CHANNEL_ID,
+    honeypotLogChId:   process.env.HONEYPOT_LOG_CHANNEL_ID,
     honeypotPurgeHrs:  Number(process.env.HONEYPOT_PURGE_HOURS) || 24,
 
     welcomeChId:    required("WELCOME_CHANNEL_ID"),

@@ -1,4 +1,4 @@
-import { Client, EmbedBuilder, GuildMember, Message } from "discord.js";
+import { Client, EmbedBuilder, GuildMember, GuildTextBasedChannel, Message } from "discord.js";
 import { config } from "@/config.js";
 
 export async function setupHoneypotChannel(client: Client) {
@@ -32,11 +32,16 @@ export async function onHoneypotMessage(message: Message) {
     if (message.channelId !== config.honeypotChId || message.author.bot)
         return;
 
-    await message.delete().catch(console.error);
-
     const member = message.member;
     if (!member)
         return;
+
+    if (!member.kickable)
+        return console.log(`${member.user.tag} (${member.id}) triggered the honeypot but can't be kicked (role hierarchy/permissions).`);
+
+    const messageContent = message.content;
+
+    await message.delete().catch(console.error);
 
     const kickEmbed = new EmbedBuilder()
         .setTitle("🚫  You have been kicked from United Lands")
@@ -47,19 +52,19 @@ export async function onHoneypotMessage(message: Message) {
         )
         .setColor("#e74c3c");
 
+    await member.send({ embeds: [ kickEmbed ] }).catch(() => {})
+
     try {
-        await member.send({ embeds: [ kickEmbed ] }).catch(() => {})
-        await member.kick("Posted in Honeypot channel");
-
-        const purgedCount = await purgeRecentMessages(member);
-        console.log(`${ member.user.tag } (${ member.id }) was kicked for posting in the honeypot channel. Purged ${ purgedCount } recent messages.`);
+        await member.kick("Posted in Honeypot Channel");
     } catch(err: Error | any) {
-        if (err.code === 50013 && err.status === 403)
-            return console.error(`Bypassing permissions prevented purging messages for ${ member.user.tag } (${ member.id }) after posting in the honeypot channel.`);
-
-        return console.error(`Failed to purge messages for ${ member.user.tag } (${ member.id }) after posting in the honeypot channel:`, err);
+        console.error(`Failed to kick ${ member.user.tag } (${ member.id }) after honypot trigger:`, err);
+        return;
     }
 
+    const purgedCount = await purgeRecentMessages(member);
+    console.log(`${ member.user.tag } (${ member.id }) was kicked for posting in the honeypot channel. Purged ${ purgedCount } recent messages.`);
+
+    await sendHoneypotLog(member, messageContent, purgedCount);
 }
 
 async function purgeRecentMessages(member: GuildMember): Promise<number> {
@@ -71,14 +76,55 @@ async function purgeRecentMessages(member: GuildMember): Promise<number> {
         if (!channel.isTextBased() || channel.isDMBased())
             continue;
 
-        const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
-        if (!messages)
-            continue;
-
-        const toDelete = messages.filter(msg => msg.author.id === member.id && msg.createdTimestamp >= cutoff);
-        await Promise.all(toDelete.map(msg => msg.delete().catch(() => {})));
-        deletedCount += toDelete.size;
+        deletedCount += await purgeUserMessagesInChannel(channel, member.id, cutoff);
     }
 
     return deletedCount;
+}
+
+async function purgeUserMessagesInChannel(channel: GuildTextBasedChannel, userId: string, cutoff: number): Promise<number> {
+    const MAX_PAGES = 5;
+
+    let deletedCount = 0;
+    let before: string | undefined;
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const batch = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
+        if (!batch || batch.size === 0)
+            break;
+
+        const toDelete = batch.filter(msg => msg.author.id === userId && msg.createdTimestamp >= cutoff);
+        await Promise.all(toDelete.map(msg => msg.delete().catch(() => {})));
+        deletedCount += toDelete.size;
+
+        const oldest = batch.last();
+        if (!oldest || oldest.createdTimestamp < cutoff)
+            break;
+
+        before = oldest.id;
+    }
+
+    return deletedCount;
+}
+
+async function sendHoneypotLog(member: GuildMember, messageContent: string, purgedCount: number) {
+    if (!config.honeypotLogChId)
+        return;
+
+    const channel = await member.guild.channels.fetch(config.honeypotLogChId).catch(() => null);
+    if (!channel || !channel.isTextBased() || channel.isDMBased())
+        return;
+
+    const logEmbed = new EmbedBuilder()
+        .setColor("#e74c3c")
+        .setAuthor({ name: `${member.user.tag} — Kicked`, iconURL: member.user.displayAvatarURL() })
+        .addFields(
+            { name: "User",             value: `${member}`, inline: true },
+            { name: "Reason",           value: "Posted in Honeypot Channel", inline: true },
+            { name: "Messages Purged",  value: `${purgedCount}`, inline: true },
+            { name: "Honeypot Message", value: (messageContent || "*(no text content)*").slice(0, 1024) },
+        )
+        .setTimestamp();
+
+    await channel.send({ embeds: [ logEmbed ] }).catch(console.error);
 }
