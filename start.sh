@@ -2,8 +2,8 @@
 cd /home/container || exit 1
 
 if [ -d .git ] && [ "${AUTO_UPDATE}" = "1" ]; then
-    git checkout -- .
-    git pull
+    git fetch origin
+    git reset --hard origin/main
 fi
 
 if [ -n "${NODE_PACKAGES}" ]; then
