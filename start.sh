@@ -1,4 +1,8 @@
+#!/bin/sh
+cd /home/container || exit 1
+
 if [ -d .git ] && [ "${AUTO_UPDATE}" = "1" ]; then
+    git checkout -- .
     git pull
 fi
 
