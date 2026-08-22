@@ -24,6 +24,17 @@ export async function deployCommands() {
 
 	const rest = new REST().setToken(config.token);
 
+	/* DEBUG: Deleting all commands
+		rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body: [] })
+
+			.then(() => console.log("Successfully deleted all guild application (/) commands."))
+			.catch(console.error);
+
+		rest.put(Routes.applicationCommands(config.clientId), { body: [] })
+			.then(() => console.log("Successfully deleted all global application (/) commands."))
+			.catch(console.error);
+	 */
+
 	try {
 		console.log(`Started reloading ${commands.length} application (/) commands...`);
 
